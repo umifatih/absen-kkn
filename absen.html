@@ -74,8 +74,28 @@ function showInvalid(){
   document.getElementById('name-grid').style.display = 'none';
 }
 
+function todayStr(){
+  return new Date().toISOString().slice(0,10);
+}
+
+function showDeviceLocked(name){
+  document.getElementById('sub-line').style.display = 'none';
+  document.getElementById('name-grid').style.display = 'none';
+  const box = document.getElementById('picked-box');
+  box.style.display = 'block';
+  document.getElementById('picked-title').textContent = name
+    ? `Device ini sudah absen hari ini (${name})`
+    : 'Device ini sudah absen hari ini';
+  document.getElementById('picked-time').textContent = 'Satu HP hanya bisa absen sekali per hari';
+}
+
+const lockDate = localStorage.getItem('kkn_absen_date');
+const lockName = localStorage.getItem('kkn_absen_name');
+
 if(!code){
   showInvalid();
+} else if(lockDate === todayStr()){
+  showDeviceLocked(lockName);
 } else {
   document.getElementById('sub-line').textContent = 'Tap namamu untuk absen';
   const grid = document.getElementById('name-grid');
@@ -111,6 +131,8 @@ async function submitAbsen(name, btn){
         document.getElementById('picked-title').textContent = `Absen tercatat, ${name}!`;
       }
       document.getElementById('picked-time').textContent = 'Pukul ' + data.time;
+      localStorage.setItem('kkn_absen_date', todayStr());
+      localStorage.setItem('kkn_absen_name', name);
     }
   }catch(e){
     alert('Gagal mengirim absen. Cek koneksi internet lalu scan ulang QR.');
