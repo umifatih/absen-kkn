@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Absen KKN</title>
+<style>
+  body{
+    margin:0;min-height:100vh;background:#EFE8D8;color:#1F3A34;
+    font-family:"Segoe UI",system-ui,sans-serif;padding:24px 16px 60px;
+  }
+  .wrap{max-width:420px;margin:0 auto;}
+  header{text-align:center;margin-bottom:24px;}
+  .eyebrow{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:#4C6B57;font-weight:600;}
+  h1{font-family:Georgia,serif;font-size:24px;margin:6px 0 4px;}
+  .sub{font-size:13px;color:#4C6B57;}
+  #invalid-box, #picked-box{
+    display:none;text-align:center;padding:28px 18px;background:#F8F4E9;
+    border-radius:12px;border:1px solid #C9BFA5;margin-top:12px;
+  }
+  #invalid-box{border-color:#B33A3A;color:#8C2C2C;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;}
+  button.name-btn{
+    padding:16px 8px;border:1px solid #C9BFA5;border-radius:10px;
+    background:#F8F4E9;color:#1F3A34;font-size:15px;font-weight:600;
+    cursor:pointer;font-family:inherit;
+  }
+  button.name-btn:active{background:#1F3A34;color:#fff;}
+  button.name-btn:disabled{opacity:.4;}
+  .status-title{font-size:18px;font-weight:700;margin-bottom:6px;}
+  .status-time{font-size:13px;color:#4C6B57;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Absensi KKN</div>
+    <h1>Pilih Nama Kamu</h1>
+    <div class="sub" id="sub-line">Memeriksa kode…</div>
+  </header>
+
+  <div id="invalid-box">
+    <div class="status-title">Kode tidak berlaku</div>
+    <div class="status-time">Kode absen sudah kadaluarsa atau salah. Scan ulang QR di lokasi.</div>
+  </div>
+
+  <div id="picked-box">
+    <div class="status-title" id="picked-title"></div>
+    <div class="status-time" id="picked-time"></div>
+  </div>
+
+  <div class="grid" id="name-grid"></div>
+</div>
+
+<script>
+// HARUS SAMA dengan URL Web App di display.html
+const SCRIPT_URL = "PASTE_URL_WEB_APP_APPS_SCRIPT_DI_SINI";
+
+// Edit daftar 15 nama anggota di sini
+const MEMBERS = [
+  "Anggota 1","Anggota 2","Anggota 3","Anggota 4","Anggota 5",
+  "Anggota 6","Anggota 7","Anggota 8","Anggota 9","Anggota 10",
+  "Anggota 11","Anggota 12","Anggota 13","Anggota 14","Anggota 15"
+];
+
+const params = new URLSearchParams(window.location.search);
+const code = params.get('code');
+
+function showInvalid(){
+  document.getElementById('sub-line').style.display = 'none';
+  document.getElementById('invalid-box').style.display = 'block';
+  document.getElementById('name-grid').style.display = 'none';
+}
+
+if(!code){
+  showInvalid();
+} else {
+  document.getElementById('sub-line').textContent = 'Tap namamu untuk absen';
+  const grid = document.getElementById('name-grid');
+  MEMBERS.forEach(name=>{
+    const btn = document.createElement('button');
+    btn.className = 'name-btn';
+    btn.textContent = name;
+    btn.addEventListener('click', ()=>submitAbsen(name, btn));
+    grid.appendChild(btn);
+  });
+}
+
+async function submitAbsen(name, btn){
+  document.querySelectorAll('.name-btn').forEach(b=>b.disabled=true);
+  btn.textContent = name + ' …';
+  try{
+    const res = await fetch(SCRIPT_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ name, code })
+    });
+    const data = await res.json();
+    document.getElementById('name-grid').style.display = 'none';
+    document.getElementById('sub-line').style.display = 'none';
+    if(data.status === 'invalid'){
+      showInvalid();
+    } else {
+      const box = document.getElementById('picked-box');
+      box.style.display = 'block';
+      if(data.status === 'already'){
+        document.getElementById('picked-title').textContent = `${name}, kamu sudah absen hari ini`;
+      } else {
+        document.getElementById('picked-title').textContent = `Absen tercatat, ${name}!`;
+      }
+      document.getElementById('picked-time').textContent = 'Pukul ' + data.time;
+    }
+  }catch(e){
+    alert('Gagal mengirim absen. Cek koneksi internet lalu scan ulang QR.');
+    document.querySelectorAll('.name-btn').forEach(b=>b.disabled=false);
+    btn.textContent = name;
+  }
+}
+</script>
+</body>
+</html>
